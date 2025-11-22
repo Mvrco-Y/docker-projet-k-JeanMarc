@@ -11,7 +11,37 @@
 
 ## Lancer le projet
 
-### 1. Environnement de développement
+### 1. Gestion du fichier d'environnement
+
+Le projet utilise un fichier `.env` pour stocker les credentials d’accès à la base de données et à PhpMyAdmin.
+
+⚠️ **Ce fichier n’est pas versionné** pour des raisons de sécurité. À la place, un fichier `.env.dist` est présent avec des valeurs par défaut.
+
+Pour utiliser l’application :
+
+1. **Créez votre fichier `.env` à partir du fichier `.env.dist` :**
+
+```bash
+cp .env.dist .env
+```
+
+**Exemple :**
+
+```bash
+# Variables MySQL
+MYSQL_ROOT_PASSWORD=root
+MYSQL_DATABASE=mabase
+MYSQL_USER=marc
+MYSQL_PASSWORD=marc123
+
+# Variables PhpMyAdmin
+PMA_USER=rootuser
+PMA_PASSWORD=root
+```
+
+### 2. Environnement de développement
+
+**⚠️ Important :** créez et configurez .env avant de démarrer vos conteneurs, sinon l’application ne pourra pas se connecter à la base de données.
 
 #### Linux / WSL / Ubuntu
 
@@ -19,7 +49,7 @@ Placez-vous dans le dossier racine du projet (là où se trouve `docker-compose.
 
 ```bash
 docker compose up --build
-````
+```
 
 #### Windows PowerShell / CMD
 
@@ -99,7 +129,7 @@ docker build -t bandnamesgenerator:1.0.0 -f app/php/Dockerfile .
 
 ## Remarques
 
-### ❗ 1. Pourquoi nous n’avons pas utilisé un bind-mount
+### 1. Pourquoi nous n’avons pas utilisé un bind-mount
 
 Un bind-mount (`./app/php:/var/www/html`) aurait permis un rechargement automatique,
 mais ce projet utilisait **docker-watch** pour surveiller les fichiers PHP et relancer FPM(**FastCGI Process Manager** une façon plus rapide, stable et optimisée de faire fonctionner PHP, idéale en Docker) automatiquement.
@@ -112,13 +142,13 @@ Cela présente deux implications :
 * Comportement plus proche d’une production réelle
 * Aucun fichier sensible exposé directement depuis la machine
 
-#### ❗ Inconvénients
+#### ❗Inconvénients
 
 * Impossible d’utiliser un bind-mount simple
   → le code devait être *copié* dans l’image à chaque build
   → ce qui nécessite un Dockerfile dédié côté PHP
 
-### ❗ 2. Obligation de créer un Dockerfile MySQL
+### 2. Obligation de créer un Dockerfile MySQL
 
 Comme nous n’avions plus de bind-mount pour injecter automatiquement `data.sql` :
 
@@ -131,7 +161,7 @@ Sans cela :
 * la base restait vide
 * certains conteneurs entraient en boucle de restart
 
-### 💡 3. Autres remarques pertinentes
+### 3. Autres remarques pertinentes
 
 * L’extension `pdo_mysql` doit être activée dans l’image PHP.
 * Le port `8085` a été choisi pour éviter les conflits avec Apache installé localement.
