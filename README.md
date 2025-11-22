@@ -74,14 +74,18 @@ docker compose logs -f
 
 ## Construire l’image pour la production
 
-⚠️ *Le Dockerfile de l’application se trouve dans* **app/php/**.
+Si tu souhaites créer **une image unique du service web** prête pour la production, nommée `bandnamesgenerator:1.0.0` :
+
+> ⚠️ **Important :** cette image ne contient que l’application web.  
+> Pour que l’application fonctionne correctement, la **base de données MySQL** doit être accessible via un autre conteneur ou serveur.
+
+Le **Dockerfile de l’application** se trouve dans : **app/php/**.
 
 Pour créer l’image de production :
 
 ```bash
 docker build -t bandnamesgenerator:1.0.0 -f app/php/Dockerfile .
 ```
-
 
 ---
 
