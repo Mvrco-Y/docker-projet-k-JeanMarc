@@ -1,10 +1,8 @@
-# Band Names Generator
 
 ## Table des matières
 - [Lancer le projet](#lancer-le-projet)
 - [Relancer les conteneurs après un redémarrage](#relancer-les-conteneurs-après-un-redémarrage)
 - [Construire l’image pour la production](#construire-limage-pour-la-production)
-- [Gestion des environnements](#gestion-des-environnements)
 - [Liens utiles](#liens-utiles)
 - [Remarques](#remarques)
 - [Sources du projet](#sources-du-projet)
@@ -16,78 +14,139 @@
 ### 1. Environnement de développement
 
 #### Linux / WSL / Ubuntu
-Placez-vous dans le dossier racine du projet (là où se trouve `docker-compose.yml`) et lancez :
+
+Placez-vous dans le dossier racine du projet (là où se trouve `docker-compose.yml`) et lancez :
 
 ```bash
-# Construire les images et démarrer les conteneurs
 docker compose up --build
-Windows PowerShell / CMD
-Placez-vous dans le dossier racine du projet et lancez :
+````
 
-powershell
-Copier le code
+#### Windows PowerShell / CMD
+
+Placez-vous dans le dossier racine du projet et exécutez :
+
+```powershell
 docker compose up --build
-Les services accessibles :
+```
 
-Application web : http://localhost:8085
+Services accessibles :
 
-PhpMyAdmin : http://localhost:8086
+* Application web : [http://localhost:8085](http://localhost:8085)
+* PhpMyAdmin : [http://localhost:8086](http://localhost:8086)
 
-Pour arrêter les conteneurs :
+Arrêter les conteneurs :
 
-bash
-Copier le code
+```bash
 docker compose down
-Si vous voulez supprimer les volumes et repartir de zéro :
+```
 
-bash
-Copier le code
+Réinitialiser complètement (volumes supprimés) :
+
+```bash
 docker compose down -v
-Relancer les conteneurs après un redémarrage
-Lorsque vous redémarrez votre machine, les conteneurs Docker arrêtés ne disparaissent pas (sauf si vous avez supprimé les volumes ou les conteneurs).
+```
 
-Pour vérifier les conteneurs existants :
+---
+
+## Relancer les conteneurs après un redémarrage
+
+Les conteneurs Docker ne disparaissent pas après un redémarrage.
+
+Afficher les conteneurs existants :
+
+```bash
 docker ps -a
+```
 
-Pour relancer votre projet sans reconstruire les images :
+Les relancer sans reconstruire :
+
+```bash
 docker compose start
+```
 
+Voir les logs :
 
-Pour voir les logs et s’assurer que tout fonctionne :
+```bash
 docker compose logs -f
-Construire l’image pour la production
+```
 
-Pour créer l’image du service web prête pour la production, nommée bandnamesgenerator:1.0.0 :
-docker build -t bandnamesgenerator:1.0.0 -f Dockerfile .
+---
+
+## Construire l’image pour la production
+
+⚠️ *Le Dockerfile de l’application se trouve dans* **app/php/**.
+
+Pour créer l’image de production :
+
+```bash
+docker build -t bandnamesgenerator:1.0.0 -f app/php/Dockerfile .
+```
 
 
-Liens utiles
-Docker
+---
 
-Docker Compose https://www.docker.com/
+## Liens utiles
 
-PHP Official Docs
+* docker-watch : [https://docs.docker.com/compose/how-tos/file-watch/](https://docs.docker.com/compose/how-tos/file-watch/)
 
-PhpMyAdmin
+* Docker : [https://docs.docker.com/](https://docs.docker.com/)
 
-Remarques
-L’application utilise PHP 8.2 FPM et MySQL 8.0.
+---
 
-Les tables de la base sont créées automatiquement via data.sql.
+## Remarques
 
-Difficultés rencontrées : initialisation de la base MySQL, permissions et gestion des Dockerfile multiples.
+### ❗ 1. Pourquoi nous n’avons pas utilisé un bind-mount
 
-Les erreurs liées aux extensions PHP (gd.so, zip.so) ne bloquent pas le fonctionnement principal.
+Un bind-mount (`./app/php:/var/www/html`) aurait permis un rechargement automatique,
+mais ce projet utilisait **docker-watch** pour surveiller les fichiers PHP et relancer FPM(**FastCGI Process Manager** une façon plus rapide, stable et optimisée de faire fonctionner PHP, idéale en Docker) automatiquement.
 
-Sources du projet
-Dockerfile (service web)
+Cela présente deux implications :
 
-Dockerfile.mysql (service base de données)
+#### ✔ Avantages
 
-docker-compose.yml
+* Isolation complète entre l’hôte et le conteneur
+* Comportement plus proche d’une production réelle
+* Aucun fichier sensible exposé directement depuis la machine
 
-.env (configuration des variables d’environnement)
+#### ❗ Inconvénients
 
-data.sql (initialisation de la base de données)
+* Impossible d’utiliser un bind-mount simple
+  → le code devait être *copié* dans l’image à chaque build
+  → ce qui nécessite un Dockerfile dédié côté PHP
 
-Sources PHP (index.php et autres fichiers contenus dans /app/php)
+### ❗ 2. Obligation de créer un Dockerfile MySQL
+
+Comme nous n’avions plus de bind-mount pour injecter automatiquement `data.sql` :
+
+* MySQL avait besoin d’un Dockerfile personnalisé (`Dockerfile.mysql`)
+* Cela permet d’intégrer le script d'initialisation directement dans l’image MySQL
+
+Sans cela :
+
+* le script SQL n’était pas exécuté au bon moment
+* la base restait vide
+* certains conteneurs entraient en boucle de restart
+
+### 💡 3. Autres remarques pertinentes
+
+* L’extension `pdo_mysql` doit être activée dans l’image PHP.
+* Le port `8085` a été choisi pour éviter les conflits avec Apache installé localement.
+* En production, remplacer `docker-watch` par un serveur dédié type :
+
+  * Nginx + PHP-FPM
+  * Supervisor pour gérer les processus
+
+---
+
+## Sources du projet
+
+* Dockerfile PHP (images officielles) :
+  [https://hub.docker.com/_/php](https://hub.docker.com/_/php)
+
+* Dockerfile MySQL (images officielles) :
+  [https://hub.docker.com/_/mysql](https://hub.docker.com/_/mysql)
+
+* Docker Compose : [https://docs.docker.com/compose/](https://docs.docker.com/compose/)
+
+```
+
